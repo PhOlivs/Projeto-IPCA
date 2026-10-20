@@ -1,0 +1,41 @@
+grupo,var_nome,primeiro,ultimo,n_meses,n_na,completo
+Alimentação e bebidas,acum_12m,2020-01-01,2026-09-01,81,11,FALSE
+Alimentação e bebidas,acum_ano,2020-01-01,2026-09-01,81,0,TRUE
+Alimentação e bebidas,peso_mensal,2020-01-01,2026-09-01,81,0,TRUE
+Alimentação e bebidas,var_mensal,2020-01-01,2026-09-01,81,0,TRUE
+Artigos de residência,acum_12m,2020-01-01,2026-09-01,81,11,FALSE
+Artigos de residência,acum_ano,2020-01-01,2026-09-01,81,0,TRUE
+Artigos de residência,peso_mensal,2020-01-01,2026-09-01,81,0,TRUE
+Artigos de residência,var_mensal,2020-01-01,2026-09-01,81,0,TRUE
+Comunicação,acum_12m,2020-01-01,2026-09-01,81,11,FALSE
+Comunicação,acum_ano,2020-01-01,2026-09-01,81,0,TRUE
+Comunicação,peso_mensal,2020-01-01,2026-09-01,81,0,TRUE
+Comunicação,var_mensal,2020-01-01,2026-09-01,81,0,TRUE
+Despesas pessoais,acum_12m,2020-01-01,2026-09-01,81,11,FALSE
+Despesas pessoais,acum_ano,2020-01-01,2026-09-01,81,0,TRUE
+Despesas pessoais,peso_mensal,2020-01-01,2026-09-01,81,0,TRUE
+Despesas pessoais,var_mensal,2020-01-01,2026-09-01,81,0,TRUE
+Educação,acum_12m,2020-01-01,2026-09-01,81,11,FALSE
+Educação,acum_ano,2020-01-01,2026-09-01,81,0,TRUE
+Educação,peso_mensal,2020-01-01,2026-09-01,81,0,TRUE
+Educação,var_mensal,2020-01-01,2026-09-01,81,0,TRUE
+Habitação,acum_12m,2020-01-01,2026-09-01,81,11,FALSE
+Habitação,acum_ano,2020-01-01,2026-09-01,81,0,TRUE
+Habitação,peso_mensal,2020-01-01,2026-09-01,81,0,TRUE
+Habitação,var_mensal,2020-01-01,2026-09-01,81,0,TRUE
+IPCA geral,acum_12m,2020-01-01,2026-09-01,81,11,FALSE
+IPCA geral,acum_ano,2020-01-01,2026-09-01,81,0,TRUE
+IPCA geral,peso_mensal,2020-01-01,2026-09-01,81,0,TRUE
+IPCA geral,var_mensal,2020-01-01,2026-09-01,81,0,TRUE
+Saúde e cuidados pessoais,acum_12m,2020-01-01,2026-09-01,81,11,FALSE
+Saúde e cuidados pessoais,acum_ano,2020-01-01,2026-09-01,81,0,TRUE
+Saúde e cuidados pessoais,peso_mensal,2020-01-01,2026-09-01,81,0,TRUE
+Saúde e cuidados pessoais,var_mensal,2020-01-01,2026-09-01,81,0,TRUE
+Transportes,acum_12m,2020-01-01,2026-09-01,81,11,FALSE
+Transportes,acum_ano,2020-01-01,2026-09-01,81,0,TRUE
+Transportes,peso_mensal,2020-01-01,2026-09-01,81,0,TRUE
+Transportes,var_mensal,2020-01-01,2026-09-01,81,0,TRUE
+Vestuário,acum_12m,2020-01-01,2026-09-01,81,11,FALSE
+Vestuário,acum_ano,2020-01-01,2026-09-01,81,0,TRUE
+Vestuário,peso_mensal,2020-01-01,2026-09-01,81,0,TRUE
+Vestuário,var_mensal,2020-01-01,2026-09-01,81,0,TRUE

@@ -1,0 +1,185 @@
+---
+title: "Inflação e Custo de Vida no Brasil"
+subtitle: "Uma análise exploratória do IPCA desde 2020"
+lang: pt-BR
+format:
+  html:
+    toc: true
+    toc-title: "Conteúdo"
+    embed-resources: true
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r setup}
+library(tidyverse); library(lubridate); library(knitr)
+
+need <- c("data/processed/ipca_indices.csv", "outputs/tables/ranking_grupos.csv",
+          "outputs/tables/estatisticas_geral.csv", "outputs/tables/picos_mensais_geral.csv",
+          "outputs/tables/picos_mensais_grupos.csv", "outputs/tables/sazonalidade.csv",
+          "outputs/tables/contribuicao_grupos.csv", "outputs/tables/validacao_contribuicao.csv",
+          "outputs/tables/comparacao_alimentacao_geral.csv", "outputs/tables/validacao_acumulados.csv",
+          "outputs/tables/correlacao_peso_aumento.csv")
+if (!all(file.exists(need))) stop("Rode antes os scripts R/01 a R/04 (veja o README).")
+
+rd <- function(f) read_csv(f, show_col_types = FALSE)
+ind <- rd(need[1]); rk <- rd(need[2]); est <- rd(need[3]); picos <- rd(need[4]); picos_g <- rd(need[5])
+saz <- rd(need[6]); cg <- rd(need[7]); chk <- rd(need[8]); comp <- rd(need[9]); vala <- rd(need[10]); cor_pa <- rd(need[11])
+
+meses_pt <- c("jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez")
+fm <- function(d) paste0(meses_pt[month(d)], "/", year(d))
+f  <- function(x, d = 2) formatC(x, format = "f", digits = d, decimal.mark = ",", big.mark = ".")
+
+meta <- jsonlite::read_json(tail(sort(list.files("data/raw", "^sidra_7060_meta_", full.names = TRUE)), 1))
+coleta <- format(as.Date(substr(meta$data_coleta, 1, 10)), "%d/%m/%Y")
+
+ini <- min(ind$data); fim <- max(ind$data)
+base_dt <- seq(ini, by = "-1 month", length.out = 2)[2]
+geral <- filter(ind, tipo == "geral")
+pos_al <- which(str_detect(rk$grupo, "^Alimenta")); al <- rk[pos_al, ]
+ultimo <- comp[nrow(comp), ]
+dif_max <- comp[which.max(comp$diferenca_indice), ]
+pico12 <- geral[which.max(geral$acum_12m), ]
+saz_g <- filter(saz, grupo == "IPCA geral")
+mes_alto <- slice_max(saz_g, media, n = 3); mes_baixo <- slice_min(saz_g, media, n = 2)
+top5 <- head(picos_g, 5)
+n_edu_fev <- sum(top5$grupo == "Educação" & month(top5$data) == 2)
+soma_contrib <- sum(cg$soma_contrib_pp)
+```
+
+## Resumo
+
+Este projeto usa dados oficiais do IBGE para investigar quais grupos de consumo mais encareceram no Brasil entre `r fm(ini)` e `r fm(fim)` e como sua evolução se compara ao IPCA geral. No período, o IPCA geral acumulou **`r f(est$aumento_acum_pct, 1)`%**, calculado pela composição das variações mensais. **`r al$grupo`** foi o grupo que mais encareceu (**`r f(al$aumento_acum_pct, 1)`%**), enquanto **`r rk$grupo[nrow(rk)]`** foi o que menos subiu (**`r f(rk$aumento_acum_pct[nrow(rk)], 1)`%**).
+
+## Pergunta de pesquisa
+
+> Quais grupos de consumo mais encareceram no Brasil desde 2020, e como sua evolução se compara à inflação geral medida pelo IPCA?
+
+Perguntas secundárias: como a inflação mensal evoluiu, quando ocorreram os maiores picos, se há padrões sazonais aparentes, qual o peso de cada grupo e quanto cada um contribuiu para a inflação geral.
+
+## Dados e metodologia
+
+**Fonte:** IBGE, SIDRA, tabela 7060 (IPCA), obtida pela API oficial. **Coleta:** `r coleta`. **Período:** `r fm(ini)` a `r fm(fim)` (`r nrow(geral)` meses). Foram usados o índice geral e os nove grupos principais; subgrupos, itens e subitens ficaram de fora para não misturar níveis.
+
+Cinco conceitos distintos aparecem neste relatório:
+
+- **Variação mensal:** quanto os preços variaram em um mês.
+- **Acumulada no ano e em 12 meses:** variações mensais *compostas* dentro dessas janelas.
+- **Índice de preços:** é construído como
+
+  `Índice = 100 × (1 + v₁/100) × (1 + v₂/100) × … × (1 + vₜ/100)`
+
+  em que *v* é a variação mensal em %. A base 100 corresponde a **`r fm(base_dt)`**, o mês anterior ao início da série. Um índice de 144,7 significa que os preços estão 44,7% acima da base. O **aumento acumulado** é o índice final menos 100. Variações mensais não são somadas, porque os percentuais incidem uns sobre os outros (1% + 1% resulta em 2,01%).
+- **Peso:** participação do grupo na cesta de consumo (%).
+- **Contribuição (em pontos percentuais, p.p.):** parcela da variação do IPCA atribuível a um grupo. Aqui é estimada de forma simplificada: `peso × variação / 100`.
+
+**Limpeza.** Os nomes das variáveis foram padronizados e as datas e os valores, convertidos. O SIDRA usa `...` para dados que não existem; esses valores viram `NA` e não foram removidos. Eles aparecem só no acumulado em 12 meses dos primeiros 11 meses da série, que não pode ser calculado sem dados anteriores a 2020. Não há duplicatas, e as quatro variáveis têm cobertura completa para os dez agregados. Os acumulados foram recalculados a partir das variações mensais e comparados com os publicados pelo IBGE: a maior diferença absoluta em 12 meses foi de `r f(max(vala$max_abs_dif_12m_pp), 2)` p.p., compatível com arredondamento a duas casas.
+
+## Análise exploratória
+
+### Inflação mensal do IPCA geral
+
+```{r}
+est |>
+  transmute(Média = f(media), Mediana = f(mediana), `Desvio-padrão` = f(desvio_padrao),
+            Máxima = paste0(f(maximo), " (", fm(mes_maximo), ")"),
+            Mínima = paste0(f(minimo), " (", fm(mes_minimo), ")")) |>
+  kable(caption = "Variação mensal do IPCA geral (%)")
+```
+
+![Variação mensal do IPCA geral](outputs/figures/01_inflacao_mensal.png)
+
+O gráfico mostra a trajetória mês a mês; valores abaixo de zero indicam deflação no mês. O acumulado em 12 meses atingiu seu maior valor em **`r fm(pico12$data)`**, com **`r f(pico12$acum_12m)`%**.
+
+```{r}
+picos |>
+  transmute(Mês = fm(data), `Variação mensal (%)` = f(var_mensal), `Acumulado 12 meses (%)` = f(acum_12m)) |>
+  kable(caption = "10 maiores variações mensais do IPCA geral")
+```
+
+### Evolução dos preços por grupo
+
+![Índice de preços por grupo (base 100)](outputs/figures/02_indice_acumulado_grupos.png)
+
+Cada linha mostra quanto os preços do grupo acumularam desde a base. Quanto mais inclinada a linha, mais rápido o grupo encareceu. A linha preta tracejada é o IPCA geral: grupos acima dela encareceram mais que a média; abaixo, menos.
+
+### Ranking de aumento acumulado
+
+![Ranking dos grupos por aumento acumulado](outputs/figures/03_ranking_aumento_acumulado.png)
+
+```{r}
+rk |>
+  transmute(Posição = posicao, Grupo = grupo, `Aumento acumulado (%)` = f(aumento_acum_pct, 1),
+            `Peso médio (%)` = f(peso_medio, 1), `Acima do IPCA geral` = ifelse(acima_do_geral, "Sim", "Não")) |>
+  kable(caption = paste0("Aumento acumulado de ", fm(ini), " a ", fm(fim)))
+```
+
+**Alimentação e bebidas** ficou na posição **`r pos_al`** de 9, com aumento acumulado de **`r f(al$aumento_acum_pct, 1)`%**, contra **`r f(est$aumento_acum_pct, 1)`%** do IPCA geral. Ao final da série, o índice de Alimentação e bebidas estava em `r f(ultimo$indice_alim, 1)` e o geral em `r f(ultimo$indice_geral, 1)`. Alimentação superou o IPCA geral em `r sum(comp$alim_acima_no_mes)` de `r nrow(comp)` meses (`r f(100 * mean(comp$alim_acima_no_mes), 0)`%). A distância entre os dois índices atingiu o máximo de `r f(dif_max$diferenca_indice, 1)` pontos em `r fm(dif_max$data)`.
+
+### Padrões sazonais aparentes
+
+![Mapa de calor da inflação mensal](outputs/figures/04_heatmap_inflacao_mensal.png)
+
+Cada linha é um ano e cada coluna, um mês; vermelho indica inflação positiva, azul indica queda, e células cinza são meses ainda não divulgados. Colunas que se repetem em tom parecido ao longo dos anos sugerem sazonalidade.
+
+```{r}
+saz_g |>
+  transmute(Mês = meses_pt[mes], Anos = n_anos, `Média (%)` = f(media), `Mediana (%)` = f(mediana),
+            `Mín. (%)` = f(minimo), `Máx. (%)` = f(maximo)) |>
+  kable(caption = "Variação mensal do IPCA geral por mês do calendário")
+```
+
+As maiores médias ocorrem em **`r paste(meses_pt[mes_alto$mes], collapse = ", ")`** e as menores em **`r paste(meses_pt[mes_baixo$mes], collapse = " e ")`**. Entre as cinco maiores variações mensais de grupos individuais, `r n_edu_fev` são de Educação em fevereiro. Como há apenas seis ou sete observações por mês e a amplitude entre mínimo e máximo é grande, esses padrões são **indícios**, não conclusões estatísticas.
+
+### Peso e contribuição
+
+![Peso médio e contribuição aproximada por grupo](outputs/figures/05_peso_contribuicao_grupos.png)
+
+```{r}
+cg |>
+  transmute(Grupo = grupo, `Peso médio (%)` = f(peso_medio, 1),
+            `Contribuição acum. aprox. (p.p.)` = f(soma_contrib_pp, 1),
+            `Participação (%)` = f(participacao_pct, 1), `Aumento acumulado (%)` = f(aumento_acum_pct, 1)) |>
+  kable()
+```
+
+Peso, variação e contribuição respondem a perguntas diferentes. O peso diz quanto do orçamento o grupo representa; a variação diz quanto seus preços subiram; a contribuição combina as duas coisas. Comunicação, por exemplo, tem peso médio de `r f(cg$peso_medio[cg$grupo == "Comunicação"], 1)`%, mas contribuiu pouco porque seus preços subiram pouco.
+
+**Limitação importante.** A estimativa soma, mês a mês, `peso × variação / 100`. Por mês, ela reproduz o IPCA geral com resíduo máximo de `r f(max(abs(chk$residuo_pp)), 3)` p.p. Porém, somar contribuições mensais não equivale à contribuição composta oficial do IBGE: a soma de todos os grupos aqui é de `r f(soma_contrib, 1)` p.p., enquanto o aumento acumulado composto do IPCA é de `r f(est$aumento_acum_pct, 1)`%. A coluna "Participação" serve para comparar grupos entre si, mas os valores em p.p. não somam o acumulado composto.
+
+A correlação de Spearman entre peso médio e aumento acumulado é de `r f(cor_pa$correlacao_spearman_peso_x_aumento, 2)`, calculada com apenas `r cor_pa$n_grupos` grupos. É uma medida descritiva, sem força para sustentar conclusões.
+
+## Principais resultados
+
+- **Maiores aumentos acumulados:** `r paste(rk$grupo[1:3], collapse = "; ")`.
+- **Menores aumentos acumulados:** `r paste(rev(tail(rk$grupo, 3)), collapse = "; ")`.
+- **Alimentação e bebidas** encareceu `r f(al$aumento_acum_pct - est$aumento_acum_pct, 1)` p.p. a mais que o IPCA geral no acumulado do período.
+- **Picos:** a maior variação mensal do IPCA geral foi de `r f(est$maximo)`% (`r fm(est$mes_maximo)`) e a menor, de `r f(est$minimo)`% (`r fm(est$mes_minimo)`).
+- **Contribuição aproximada:** os três grupos com maior contribuição foram `r paste(cg$grupo[1:3], collapse = "; ")`, responsáveis por `r f(sum(cg$participacao_pct[1:3]), 0)`% do total estimado.
+
+## Conclusões econômicas
+
+**O que os dados mostram.** Alimentação e bebidas foi o grupo que mais encareceu no período e também o de maior contribuição estimada para a inflação, combinando alta variação e alto peso. As cinco maiores variações mensais do IPCA geral ocorreram em `r paste0(paste(head(fm(sort(picos$data[1:5])), 4), collapse = ", "), " e ", fm(sort(picos$data[1:5]))[5])`, e o acumulado em 12 meses chegou a `r f(pico12$acum_12m)`% em `r fm(pico12$data)`. Comunicação ficou muito abaixo dos demais grupos.
+
+**Hipóteses (não testadas neste projeto).** O que segue são possíveis explicações para investigar, não resultados:
+
+- Choques de oferta e de custos podem ter pressionado os preços de alimentos e de transportes em alguns períodos. Para afirmar isso é preciso consultar as notas do IBGE de cada mês de pico.
+- O padrão de fevereiro em Educação é compatível com reajustes de mensalidades no início do ano letivo, o que deve ser confirmado na metodologia do IBGE.
+- A diferença entre grupos pode refletir fatores distintos de oferta, demanda, câmbio e preços administrados. Esta análise descritiva não os separa.
+
+Este relatório observa associações nos dados e não estabelece causalidade. Além disso, o IPCA é um índice agregado, calculado para famílias urbanas com rendimento de 1 a 40 salários mínimos; a inflação vivida por cada família depende da composição de seus gastos. Uma família que destina grande parte do orçamento a alimentação teve experiência diferente da média.
+
+## Limitações
+
+- Análise descritiva: não permite concluir causas, e correlações não implicam causalidade.
+- A série cobre poucos anos e inclui choques atípicos; padrões sazonais e a correlação entre grupos (n = 9) são frágeis.
+- A contribuição é uma aproximação simplificada, não o impacto oficial do IBGE.
+- Grupos são agregados heterogêneos; médias escondem variações entre itens, subgrupos e regiões.
+- Os dados são de um único momento de coleta (`r coleta`) e podem ser revistos ou ampliados pelo IBGE.
+
+## Referências
+
+- IBGE. SIDRA, Tabela 7060: IPCA. <https://sidra.ibge.gov.br/tabela/7060>
+- IBGE. IPCA, Índice Nacional de Preços ao Consumidor Amplo. <https://www.ibge.gov.br/estatisticas/economicas/precos-e-custos/9256-indice-nacional-de-precos-ao-consumidor-amplo.html>

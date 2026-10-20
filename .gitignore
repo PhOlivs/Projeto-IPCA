@@ -1,0 +1,12 @@
+.Rhistory
+.RData
+.Rapp.history
+.Rproj.user/
+.Renviron
+.httr-oauth
+.quarto/
+*_cache/
+*_files/
+*.log
+.vscode/
+.DS_Store
