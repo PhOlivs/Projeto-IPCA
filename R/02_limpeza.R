@@ -6,7 +6,8 @@
 suppressPackageStartupMessages({
   library(tidyverse); library(lubridate); library(jsonlite); library(janitor)
 })
-if (!all(dir.exists(c("R", "data")))) stop("Execute a partir da raiz do projeto.", call. = FALSE)
+if (!dir.exists("R")) stop("Execute a partir da raiz do projeto (pasta que contém a pasta R/).", call. = FALSE)
+dir.create("data", recursive = TRUE, showWarnings = FALSE)
 dir.create("data/processed", recursive = TRUE, showWarnings = FALSE)
 dir.create("outputs/tables", recursive = TRUE, showWarnings = FALSE)
 

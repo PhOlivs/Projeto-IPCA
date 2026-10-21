@@ -12,7 +12,8 @@
 # Se falhar, rode de novo em alguns minutos: janelas já obtidas não são salvas, mas a coleta é rápida.
 
 suppressPackageStartupMessages({ library(httr2); library(jsonlite); library(dplyr) })
-if (!all(dir.exists(c("R", "data")))) stop("Execute a partir da raiz do projeto.", call. = FALSE)
+if (!dir.exists("R")) stop("Execute a partir da raiz do projeto (pasta que contém a pasta R/).", call. = FALSE)
+dir.create("data", recursive = TRUE, showWarnings = FALSE)
 dir.create("data/raw", recursive = TRUE, showWarnings = FALSE)
 
 INICIO <- as.Date("2019-12-01")   # dez/2019 é necessário para a variação do câmbio em jan/2020

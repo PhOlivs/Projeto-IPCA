@@ -16,8 +16,12 @@
 #     -> descritivo: preços livres x monitorados e correlação defasada dos grupos com a variação do câmbio.
 
 suppressPackageStartupMessages({ library(tidyverse); library(lubridate) })
-if (!file.exists("data/processed/ipca_indices.csv")) stop("Rode antes: Rscript R/03_analise.R", call. = FALSE)
+if (!dir.exists("R")) stop("Execute a partir da raiz do projeto (pasta que contém a pasta R/).", call. = FALSE)
+dir.create("data", recursive = TRUE, showWarnings = FALSE)
+dir.create("data/processed", recursive = TRUE, showWarnings = FALSE)
+dir.create("outputs", recursive = TRUE, showWarnings = FALSE)
 dir.create("outputs/tables", recursive = TRUE, showWarnings = FALSE)
+if (!file.exists("data/processed/ipca_indices.csv")) stop("Rode antes: Rscript R/03_analise.R", call. = FALSE)
 
 LIM <- list(h2_prop_anos_fev = 0.8, h2_share_fev = 0.5, h2_share_regulares = 0.7,
             h1_share_top5 = 0.5, h1_share_alim_transp = 0.5, h1_prop_picos = 0.6, residuo_itens_pp = 0.05)

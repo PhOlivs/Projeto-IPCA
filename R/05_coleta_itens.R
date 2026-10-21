@@ -9,7 +9,8 @@
 # por nível e para, em vez de seguir com dados errados.
 
 suppressPackageStartupMessages({ library(tidyverse); library(httr2); library(jsonlite) })
-if (!all(dir.exists(c("R", "data")))) stop("Execute a partir da raiz do projeto.", call. = FALSE)
+if (!dir.exists("R")) stop("Execute a partir da raiz do projeto (pasta que contém a pasta R/).", call. = FALSE)
+dir.create("data", recursive = TRUE, showWarnings = FALSE)
 dir.create("data/raw", recursive = TRUE, showWarnings = FALSE)
 
 API_BASE <- "https://apisidra.ibge.gov.br/values"; TABELA <- "7060"; PERIODO_0 <- "202001"

@@ -1,8 +1,10 @@
 # R/04_visualizacoes.R
 # Cria 5 gráficos PNG em outputs/figures/. Execução: Rscript R/04_visualizacoes.R
 suppressPackageStartupMessages({ library(tidyverse); library(lubridate); library(scales) })
+if (!dir.exists("R")) stop("Execute a partir da raiz do projeto (pasta que contém a pasta R/).", call. = FALSE)
 need <- c("data/processed/ipca_indices.csv", "outputs/tables/ranking_grupos.csv", "outputs/tables/contribuicao_grupos.csv")
 if (!all(file.exists(need))) stop("Rode antes: Rscript R/03_analise.R", call. = FALSE)
+dir.create("outputs", recursive = TRUE, showWarnings = FALSE)
 dir.create("outputs/figures", recursive = TRUE, showWarnings = FALSE)
 
 ind <- read_csv(need[1], show_col_types = FALSE); rk <- read_csv(need[2], show_col_types = FALSE)

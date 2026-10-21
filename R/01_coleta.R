@@ -10,9 +10,10 @@
 
 suppressPackageStartupMessages({ library(httr2); library(jsonlite); library(dplyr) })
 
-if (!all(dir.exists(c("R", "data")))) {
-  stop("Execute a partir da raiz do projeto (pasta que contém R/ e data/).", call. = FALSE)
+if (!dir.exists("R")) {
+  stop("Execute a partir da raiz do projeto (pasta que contém a pasta R/).", call. = FALSE)
 }
+dir.create("data", recursive = TRUE, showWarnings = FALSE)
 dir.create("data/raw", recursive = TRUE, showWarnings = FALSE)
 
 API_BASE  <- "https://apisidra.ibge.gov.br/values"

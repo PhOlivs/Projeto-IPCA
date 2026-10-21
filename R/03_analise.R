@@ -10,6 +10,9 @@
 #  - Peso: participação do grupo na cesta (%). Contribuição (p.p.) ~ peso x variação / 100 (estimativa simplificada).
 
 suppressPackageStartupMessages({ library(tidyverse); library(lubridate) })
+if (!dir.exists("R")) stop("Execute a partir da raiz do projeto (pasta que contém a pasta R/).", call. = FALSE)
+dir.create("data", recursive = TRUE, showWarnings = FALSE)
+dir.create("data/processed", recursive = TRUE, showWarnings = FALSE)
 if (!file.exists("data/processed/ipca_tratado.csv")) stop("Rode antes: Rscript R/02_limpeza.R", call. = FALSE)
 dir.create("outputs/tables", recursive = TRUE, showWarnings = FALSE)
 dados <- read_csv("data/processed/ipca_tratado.csv", show_col_types = FALSE)

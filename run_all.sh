@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Executa o pipeline completo. Uso: bash run_all.sh
 set -euo pipefail
+mkdir -p data data/raw outputs outputs/figures outputs/tables
 Rscript R/00_verificar_ambiente.R
 Rscript R/01_coleta.R
 Rscript R/02_limpeza.R
