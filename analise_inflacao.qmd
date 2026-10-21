@@ -1,12 +1,19 @@
 ---
-title: "Inflação e Custo de Vida no Brasil"
-subtitle: "Uma análise exploratória do IPCA desde 2020"
+title: "Inflação e custo de vida no Brasil desde 2020"
+subtitle: "O que os dados do IPCA mostram — e o que ainda não permitem concluir"
+author: "PhOlivs"
 lang: pt-BR
 format:
   html:
     toc: true
     toc-title: "Conteúdo"
     embed-resources: true
+  typst:
+    output-file: artigo_ipca.pdf
+    toc: true
+    toc-title: "Conteúdo"
+    papersize: a4
+    number-sections: true
 execute:
   echo: false
   warning: false
@@ -59,9 +66,11 @@ n_edu_fev <- sum(top5$grupo == "Educação" & month(top5$data) == 2)
 soma_contrib <- sum(cg$soma_contrib_pp)
 ```
 
-## Resumo
+## Em poucas palavras
 
-Este projeto usa dados oficiais do IBGE para investigar quais grupos de consumo mais encareceram no Brasil entre `r fm(ini)` e `r fm(fim)` e como sua evolução se compara ao IPCA geral. No período, o IPCA geral acumulou **`r f(est$aumento_acum_pct, 1)`%**, calculado pela composição das variações mensais. **`r al$grupo`** foi o grupo que mais encareceu (**`r f(al$aumento_acum_pct, 1)`%**), enquanto **`r rk$grupo[nrow(rk)]`** foi o que menos subiu (**`r f(rk$aumento_acum_pct[nrow(rk)], 1)`%**).
+Quando os preços sobem, a experiência não é igual para todo mundo: pesa mais no orçamento aquilo que cada família compra com frequência. Este artigo acompanha o IPCA entre `r fm(ini)` e `r fm(fim)` para entender quais grupos ficaram mais caros e como se comportaram os principais momentos de alta.
+
+No período, o IPCA geral acumulou **`r f(est$aumento_acum_pct, 1)`%**. **`r al$grupo`** teve o maior aumento (**`r f(al$aumento_acum_pct, 1)`%**), enquanto **`r rk$grupo[nrow(rk)]`** teve o menor (**`r f(rk$aumento_acum_pct[nrow(rk)], 1)`%**). Também examinamos os picos mensais, a concentração da inflação em alguns itens, o padrão de fevereiro em Educação e as relações descritivas entre câmbio e preços. Os resultados ajudam a organizar o que aconteceu, mas não identificam, por si só, as causas da inflação.
 
 ## Pergunta de pesquisa
 
@@ -267,6 +276,8 @@ Com 81 meses, muitos testes simultâneos, sem controles e com variáveis correla
 - **H3, câmbio, preços livres e administrados:** `r vh$veredito[3]`. Análise descritiva, sem controle de outros fatores.
 
 Este relatório observa associações nos dados e não estabelece causalidade. Além disso, o IPCA é um índice agregado, calculado para famílias urbanas com rendimento de 1 a 40 salários mínimos; a inflação vivida por cada família depende da composição de seus gastos. Uma família que destina grande parte do orçamento a alimentação teve experiência diferente da média.
+
+Em termos práticos, a mensagem principal é simples: olhar apenas para o número geral esconde diferenças importantes entre categorias e entre famílias. A análise aponta onde os aumentos foram mais fortes e quando eles se concentraram; para explicar por que isso aconteceu, seria preciso combinar o IPCA com informações adicionais sobre oferta, custos, políticas de preços e hábitos de consumo.
 
 ## Limitações
 
