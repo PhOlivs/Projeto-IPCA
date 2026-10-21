@@ -1,0 +1,25 @@
+{
+  "fonte": "Banco Central do Brasil - SGS",
+  "data_coleta": "2026-10-20 21:39:10 -03",
+  "1": {
+    "arquivo": "bcb_sgs_1_20261020_213843.csv",
+    "urls": ["https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json&dataInicial=01/12/2019&dataFinal=29/02/2020", "https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json&dataInicial=01/03/2020&dataFinal=31/05/2020", "https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json&dataInicial=01/06/2020&dataFinal=31/08/2020", "https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json&dataInicial=01/09/2020&dataFinal=30/11/2020", "https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json&dataInicial=01/12/2020&dataFinal=28/02/2021", "https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json&dataInicial=01/03/2021&dataFinal=31/05/2021", "https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json&dataInicial=01/06/2021&dataFinal=31/08/2021", "https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json&dataInicial=01/09/2021&dataFinal=30/11/2021", "https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json&dataInicial=01/12/2021&dataFinal=28/02/2022", "https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json&dataInicial=01/03/2022&dataFinal=31/05/2022", "https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json&dataInicial=01/06/2022&dataFinal=31/08/2022", "https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json&dataInicial=01/09/2022&dataFinal=30/11/2022", "https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json&dataInicial=01/12/2022&dataFinal=28/02/2023", "https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json&dataInicial=01/03/2023&dataFinal=31/05/2023", "https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json&dataInicial=01/06/2023&dataFinal=31/08/2023", "https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json&dataInicial=01/09/2023&dataFinal=30/11/2023", "https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json&dataInicial=01/12/2023&dataFinal=29/02/2024", "https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json&dataInicial=01/03/2024&dataFinal=31/05/2024", "https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json&dataInicial=01/06/2024&dataFinal=31/08/2024", "https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json&dataInicial=01/09/2024&dataFinal=30/11/2024", "https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json&dataInicial=01/12/2024&dataFinal=28/02/2025", "https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json&dataInicial=01/03/2025&dataFinal=31/05/2025", "https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json&dataInicial=01/06/2025&dataFinal=31/08/2025", "https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json&dataInicial=01/09/2025&dataFinal=30/11/2025", "https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json&dataInicial=01/12/2025&dataFinal=28/02/2026", "https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json&dataInicial=01/03/2026&dataFinal=31/05/2026", "https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json&dataInicial=01/06/2026&dataFinal=31/08/2026", "https://api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados?formato=json&dataInicial=01/09/2026&dataFinal=20/10/2026"],
+    "n": 1728,
+    "primeira": "2019-12-02",
+    "ultima": "2026-10-20"
+  },
+  "4449": {
+    "arquivo": "bcb_sgs_4449_20261020_213843.csv",
+    "urls": "https://api.bcb.gov.br/dados/serie/bcdata.sgs.4449/dados?formato=json&dataInicial=01/12/2019&dataFinal=20/10/2026",
+    "n": 82,
+    "primeira": "2019-12-01",
+    "ultima": "2026-09-01"
+  },
+  "11428": {
+    "arquivo": "bcb_sgs_11428_20261020_213843.csv",
+    "urls": "https://api.bcb.gov.br/dados/serie/bcdata.sgs.11428/dados?formato=json&dataInicial=01/12/2019&dataFinal=20/10/2026",
+    "n": 82,
+    "primeira": "2019-12-01",
+    "ultima": "2026-09-01"
+  }
+}

@@ -1,0 +1,4 @@
+criterio,valor,limiar,atendido
+Proporção de anos em que fevereiro é o mês de maior alta de Educação,1,0.8,TRUE
+"Mediana da razão (alta de fevereiro / alta do ano), anos completos",0.7580806188380265,0.5,TRUE
+Participação do item 'Cursos regulares' na contribuição de fevereiro (itens de Educação),0.9029456872083194,0.7,TRUE

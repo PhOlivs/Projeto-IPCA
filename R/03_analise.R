@@ -13,7 +13,7 @@ suppressPackageStartupMessages({ library(tidyverse); library(lubridate) })
 if (!file.exists("data/processed/ipca_tratado.csv")) stop("Rode antes: Rscript R/02_limpeza.R", call. = FALSE)
 dir.create("outputs/tables", recursive = TRUE, showWarnings = FALSE)
 dados <- read_csv("data/processed/ipca_tratado.csv", show_col_types = FALSE)
-tab <- function(x, nome) { write_csv(x, file.path("outputs/tables", nome)); x }
+tab <- function(x, nome) { write_csv(x, file.path("outputs/tables", nome)); invisible(x) }
 
 # 1) Índices compostos
 ind <- dados |> arrange(grupo, data) |> group_by(grupo) |>

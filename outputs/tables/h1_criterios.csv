@@ -1,0 +1,3 @@
+criterio,valor,limiar,atendido
+Proporção de picos em que os 5 maiores itens explicam >= limiar da alta do IPCA,1,0.6,TRUE
+Proporção de picos em que Alimentação+Transportes explicam >= limiar da alta do IPCA,0.6,0.6,TRUE

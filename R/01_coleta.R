@@ -102,7 +102,7 @@ if (length(existentes) && any(unname(tools::md5sum(existentes)) == unname(tools:
 }
 arq_dados <- file.path("data/raw", paste0("sidra_7060_dados_", carimbo, ".json"))
 stopifnot(!file.exists(arq_dados))
-file.copy(tmp, arq_dados)
+invisible(file.copy(tmp, arq_dados))
 
 write_json(list(
   fonte = "IBGE/SIDRA - Tabela 7060 (IPCA)", url_dados = r2$url, url_categorias = r1$url,

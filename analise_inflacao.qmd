@@ -42,6 +42,16 @@ pos_al <- which(str_detect(rk$grupo, "^Alimenta")); al <- rk[pos_al, ]
 ultimo <- comp[nrow(comp), ]
 dif_max <- comp[which.max(comp$diferenca_indice), ]
 pico12 <- geral[which.max(geral$acum_12m), ]
+need_h <- c("outputs/tables/veredito_hipoteses.csv", "outputs/tables/h2_criterios.csv", "outputs/tables/h2_educacao_itens_fevereiro.csv",
+            "outputs/tables/h1_criterios.csv", "outputs/tables/h1_picos_resumo.csv", "outputs/tables/h1_picos_itens.csv",
+            "outputs/tables/h3_resumo.csv", "outputs/tables/h3_livres_monitorados.csv", "outputs/tables/h3_correlacao_cambio.csv", "outputs/tables/h1_concentracao_resumo.csv", "outputs/tables/h1_picos_grupos.csv")
+if (!all(file.exists(need_h))) stop("Rode antes os scripts R/05 a R/08 (veja o README).")
+vh <- rd(need_h[1]); h2c <- rd(need_h[2]); h2i <- rd(need_h[3]); h1c <- rd(need_h[4]); h1p <- rd(need_h[5])
+h1i <- rd(need_h[6]); h3r <- rd(need_h[7]); h3l <- rd(need_h[8]); h3c <- rd(need_h[9]); h1b <- rd(need_h[10]); h1g <- rd(need_h[11])
+fp <- function(x, d = 0) ifelse(is.na(x), "não avaliável", paste0(f(100 * x, d), "%"))
+sn <- function(x) ifelse(is.na(x), "não avaliável", ifelse(x, "Sim", "Não"))
+melhor <- h3c |> slice_max(abs(correlacao), n = 1, with_ties = FALSE)
+h1_grp <- h1g |> group_by(grupo) |> summarise(media = mean(share_var_geral), .groups = "drop") |> arrange(desc(media))
 saz_g <- filter(saz, grupo == "IPCA geral")
 mes_alto <- slice_max(saz_g, media, n = 3); mes_baixo <- slice_min(saz_g, media, n = 2)
 top5 <- head(picos_g, 5)
@@ -61,7 +71,7 @@ Perguntas secundárias: como a inflação mensal evoluiu, quando ocorreram os ma
 
 ## Dados e metodologia
 
-**Fonte:** IBGE, SIDRA, tabela 7060 (IPCA), obtida pela API oficial. **Coleta:** `r coleta`. **Período:** `r fm(ini)` a `r fm(fim)` (`r nrow(geral)` meses). Foram usados o índice geral e os nove grupos principais; subgrupos, itens e subitens ficaram de fora para não misturar níveis.
+**Fonte:** IBGE, SIDRA, tabela 7060 (IPCA), obtida pela API oficial. **Coleta:** `r coleta`. **Período:** `r fm(ini)` a `r fm(fim)` (`r nrow(geral)` meses). Foram usados o índice geral e os nove grupos principais; subgrupos e itens foram usados apenas na seção de hipóteses, sem misturar níveis nas comparações principais.
 
 Cinco conceitos distintos aparecem neste relatório:
 
@@ -151,6 +161,93 @@ Peso, variação e contribuição respondem a perguntas diferentes. O peso diz q
 
 A correlação de Spearman entre peso médio e aumento acumulado é de `r f(cor_pa$correlacao_spearman_peso_x_aumento, 2)`, calculada com apenas `r cor_pa$n_grupos` grupos. É uma medida descritiva, sem força para sustentar conclusões.
 
+## Investigação das hipóteses
+
+Para ir além da descrição, as três hipóteses foram transformadas em **previsões que podem falhar**, com limiares definidos antes de olhar os resultados (são escolhas de julgamento, não regras estatísticas; estão em `R/07_hipoteses.R`). Foram coletados dados adicionais: IPCA por subgrupo e item (IBGE/SIDRA, tabela 7060) e séries do Banco Central (SGS: câmbio, preços livres e monitorados). **"Consistente" significa que os dados não contradizem a hipótese; não significa que ela esteja provada.**
+
+```{r}
+vh |> transmute(Hipótese = hipotese, Veredito = veredito, Observação = observacao) |> kable()
+```
+
+### H2: Educação em fevereiro e reajuste de mensalidades
+
+**Previsão.** Se o salto vem de reajustes de mensalidades, fevereiro deve ser o mês de maior alta de Educação na maioria dos anos, deve responder pela maior parte da alta anual e deve se concentrar no item de cursos regulares.
+
+```{r}
+h2c |> transmute(Critério = criterio, Resultado = fp(valor), Limiar = fp(limiar), Atendido = sn(atendido)) |> kable()
+```
+
+Fevereiro foi o mês de maior alta de Educação em `r fp(h2c$valor[1])` dos anos; a mediana da razão entre a alta de fevereiro e a alta do ano foi de `r fp(h2c$valor[2])`; e o item "Cursos regulares" respondeu por `r fp(h2c$valor[3])` da contribuição de fevereiro entre os itens de Educação. Veredito: **`r vh$veredito[2]`**.
+
+```{r}
+h2i |> filter(nivel == 4) |>
+  transmute(Item = nome, `Peso médio (%)` = f(peso_medio, 1), `Var. média em fev. (%)` = f(var_media_fev),
+            `Var. média nos demais meses (%)` = f(var_media_demais_meses), `Participação na contribuição de fev.` = fp(participacao_fev)) |>
+  kable(caption = "Itens de Educação")
+```
+
+```{r}
+#| fig-cap: "Educação: variação mensal por mês do calendário"
+knitr::include_graphics("outputs/figures/06_h2_educacao_por_mes.png")
+```
+
+```{r}
+#| fig-cap: "Contribuição dos itens de Educação em fevereiro"
+knitr::include_graphics("outputs/figures/07_h2_educacao_fevereiro_itens.png")
+```
+
+O teste usa só dados do IBGE. Ele mostra *onde* o salto acontece, mas o mecanismo (reajuste de mensalidades) deve ser confirmado na metodologia do IBGE.
+
+### H1: choques de oferta e de custos nos picos
+
+**Previsão.** Nos cinco maiores picos do IPCA, a alta deve estar concentrada em poucos itens, e Alimentação e Transportes devem explicar a maior parte dela.
+
+```{r}
+h1p |> transmute(Mês = fm(data), `Alta do IPCA (%)` = f(var_geral),
+                 `5 maiores itens (% da alta)` = f(100 * share_top5, 0),
+                 `Alimentação + Transportes (% da alta)` = f(100 * share_alim_transp, 0)) |> kable()
+```
+
+Em `r fp(h1c$valor[1])` dos picos os cinco maiores itens explicam pelo menos metade da alta, e em `r fp(h1c$valor[2])` dos picos Alimentação e Transportes explicam pelo menos metade (limiar de `r fp(h1c$limiar[1])` dos picos em cada critério). Veredito: **`r vh$veredito[1]`**.
+
+**Verificações adicionais (robustez).** A fatia das contribuições positivas explicada pelos cinco maiores itens foi, em mediana, de `r fp(h1b$mediana_picos)` nos picos e de `r fp(h1b$mediana_todos_meses)` em todos os meses; se os valores forem próximos, a concentração nos picos não é uma característica especial deles. Por grupo, a maior participação média na alta dos picos foi de `r paste(h1_grp$grupo[1:3], collapse = "; ")` (`r paste(f(100 * h1_grp$media[1:3], 0), collapse = "%; ")`%). Portanto, o critério "Alimentação + Transportes" pode ser atendido principalmente por um dos dois grupos; veja os itens líderes abaixo antes de concluir.
+
+```{r}
+h1i |> filter(rank <= 3) |>
+  transmute(Mês = fm(data), Posição = rank, Item = nome, Grupo = grupo, `Contribuição (p.p.)` = f(contrib_pp)) |>
+  kable(caption = "Três itens de maior contribuição em cada pico")
+```
+
+```{r}
+#| fig-cap: "Principais itens nos cinco maiores picos do IPCA"
+knitr::include_graphics("outputs/figures/08_h1_picos_itens.png")
+```
+
+Este teste verifica a **concentração** da alta, não a **causa**. Afirmar que houve choque de oferta ou de custos exige evidência externa (notas do IBGE de cada mês, preços de commodities e combustíveis), que não foi coletada.
+
+### H3: câmbio, preços livres e administrados
+
+Aqui a análise é apenas descritiva. Os preços monitorados (administrados) acumularam `r f(h3r$valor[3], 1)`% no período e os preços livres, `r f(h3r$valor[2], 1)`%, contra `r f(h3r$valor[1], 1)`% do IPCA geral. No acumulado do período os dois ficaram muito próximos, mas dentro de um mesmo ano a diferença entre eles chegou a `r f(max(abs(h3l$livres[h3l$ano != "Período todo"] - h3l$monitorados[h3l$ano != "Período todo"])), 1)` p.p. Explicar essas divergências exige informação sobre os itens monitorados e sobre eventuais medidas de política de preços, que não foram analisadas aqui.
+
+```{r}
+h3l |> transmute(Ano = ano, Meses = meses, `IPCA geral (%)` = f(geral), `Livres (%)` = f(livres), `Monitorados (%)` = f(monitorados)) |>
+  kable(caption = "Inflação acumulada (composta) por ano")
+```
+
+```{r}
+#| fig-cap: "Preços livres e monitorados"
+knitr::include_graphics("outputs/figures/09_h3_livres_monitorados.png")
+```
+
+Foram calculadas correlações entre a inflação mensal de cada grupo e a variação mensal do câmbio (média mensal do dólar), com defasagens de 0 a 6 meses. Das `r h3r$valor[5]` correlações, `r h3r$valor[4]` ficaram acima do limiar aproximado de ruído (2/√n), contra cerca de `r f(h3r$valor[6], 1)` esperadas só por acaso (e os grupos são correlacionados entre si, então o número efetivo de testes independentes é menor). A maior correlação absoluta foi `r f(melhor$correlacao)`, entre **`r melhor$grupo`** e o câmbio defasado em `r melhor$defasagem_meses` meses, o que corresponde a cerca de `r f(100 * melhor$correlacao^2, 0)`% da variação mensal do grupo.`r ifelse(melhor$defasagem_meses == max(h3c$defasagem_meses), " Como essa é a maior defasagem testada, o resultado merece cautela: a relação pode se estender a defasagens maiores ou ser acaso.", "")` Veredito: **`r vh$veredito[3]`**.
+
+```{r}
+#| fig-cap: "Correlação entre inflação dos grupos e variação do câmbio"
+knitr::include_graphics("outputs/figures/10_h3_correlacao_cambio.png")
+```
+
+Com 81 meses, muitos testes simultâneos, sem controles e com variáveis correlacionadas entre si, esse resultado **não identifica causalidade**.
+
 ## Principais resultados
 
 - **Maiores aumentos acumulados:** `r paste(rk$grupo[1:3], collapse = "; ")`.
@@ -163,11 +260,11 @@ A correlação de Spearman entre peso médio e aumento acumulado é de `r f(cor_
 
 **O que os dados mostram.** Alimentação e bebidas foi o grupo que mais encareceu no período e também o de maior contribuição estimada para a inflação, combinando alta variação e alto peso. As cinco maiores variações mensais do IPCA geral ocorreram em `r paste0(paste(head(fm(sort(picos$data[1:5])), 4), collapse = ", "), " e ", fm(sort(picos$data[1:5]))[5])`, e o acumulado em 12 meses chegou a `r f(pico12$acum_12m)`% em `r fm(pico12$data)`. Comunicação ficou muito abaixo dos demais grupos.
 
-**Hipóteses (não testadas neste projeto).** O que segue são possíveis explicações para investigar, não resultados:
+**Hipóteses (testadas de forma exploratória).** Os resultados completos estão na seção "Investigação das hipóteses"; os vereditos significam apenas que os dados não contradizem (ou contradizem) cada hipótese:
 
-- Choques de oferta e de custos podem ter pressionado os preços de alimentos e de transportes em alguns períodos. Para afirmar isso é preciso consultar as notas do IBGE de cada mês de pico.
-- O padrão de fevereiro em Educação é compatível com reajustes de mensalidades no início do ano letivo, o que deve ser confirmado na metodologia do IBGE.
-- A diferença entre grupos pode refletir fatores distintos de oferta, demanda, câmbio e preços administrados. Esta análise descritiva não os separa.
+- **H1, choques de oferta e de custos nos picos:** `r vh$veredito[1]`. A causa não foi testada; exige evidência externa.
+- **H2, Educação em fevereiro:** `r vh$veredito[2]`. O mecanismo de reajuste de mensalidades deve ser confirmado na metodologia do IBGE.
+- **H3, câmbio, preços livres e administrados:** `r vh$veredito[3]`. Análise descritiva, sem controle de outros fatores.
 
 Este relatório observa associações nos dados e não estabelece causalidade. Além disso, o IPCA é um índice agregado, calculado para famílias urbanas com rendimento de 1 a 40 salários mínimos; a inflação vivida por cada família depende da composição de seus gastos. Uma família que destina grande parte do orçamento a alimentação teve experiência diferente da média.
 
@@ -177,9 +274,11 @@ Este relatório observa associações nos dados e não estabelece causalidade. A
 - A série cobre poucos anos e inclui choques atípicos; padrões sazonais e a correlação entre grupos (n = 9) são frágeis.
 - A contribuição é uma aproximação simplificada, não o impacto oficial do IBGE.
 - Grupos são agregados heterogêneos; médias escondem variações entre itens, subgrupos e regiões.
+- Os limiares dos testes de hipóteses são escolhas de julgamento; com outros limiares os vereditos podem mudar. A contribuição por item usa a mesma aproximação simplificada.
 - Os dados são de um único momento de coleta (`r coleta`) e podem ser revistos ou ampliados pelo IBGE.
 
 ## Referências
 
 - IBGE. SIDRA, Tabela 7060: IPCA. <https://sidra.ibge.gov.br/tabela/7060>
+- Banco Central do Brasil. Sistema Gerenciador de Séries Temporais (SGS), séries 1, 4449 e 11428. <https://dadosabertos.bcb.gov.br/>
 - IBGE. IPCA, Índice Nacional de Preços ao Consumidor Amplo. <https://www.ibge.gov.br/estatisticas/economicas/precos-e-custos/9256-indice-nacional-de-precos-ao-consumidor-amplo.html>

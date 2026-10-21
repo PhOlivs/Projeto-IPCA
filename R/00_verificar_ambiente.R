@@ -37,5 +37,9 @@ if (all(instalado)) {
     r <- request(url) |> req_timeout(30) |> req_perform()
     cat("  [ok] API do SIDRA respondeu (HTTP", resp_status(r), ")\n")
   }, error = function(e) cat("  [FALHA] API do SIDRA:", conditionMessage(e), "\n"))
+  tryCatch({
+    r <- request("https://api.bcb.gov.br/dados/serie/bcdata.sgs.4449/dados/ultimos/1?formato=json") |> req_timeout(30) |> req_perform()
+    cat("  [ok] API do Banco Central (SGS) respondeu (HTTP", resp_status(r), ")\n")
+  }, error = function(e) cat("  [FALHA] API do Banco Central:", conditionMessage(e), "\n"))
 }
 cat("\nSe todos os itens estão [ok], siga para: Rscript R/01_coleta.R\n")
