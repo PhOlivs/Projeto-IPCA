@@ -1,0 +1,4 @@
+agregado,primeiro_mes,ultimo_mes,n_meses,n_esperado,completo,codigo,violacoes_hierarquia_M2_M3_M4
+M2,2001-12-01,2026-08-01,297,297,TRUE,27810,0
+M3,2001-12-01,2026-08-01,297,297,TRUE,27813,0
+M4,2001-12-01,2026-08-01,297,297,TRUE,27815,0

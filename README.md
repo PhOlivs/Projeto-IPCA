@@ -99,6 +99,28 @@ Cada hipótese vira previsões que podem falhar. Os limiares ficam no topo de `R
 ![H3: livres x monitorados](outputs/figures/09_h3_livres_monitorados.png)
 ![H3: correlação com o câmbio](outputs/figures/10_h3_correlacao_cambio.png)
 
+## Agregados monetários (M2, M3 e M4) e inflação
+
+Complemento à análise do IPCA: investiga se o crescimento dos meios de pagamento amplos **acompanha** ou **antecede** a inflação. A análise usa o IPCA já existente no projeto (SIDRA 7060) e só coleta os agregados no Banco Central. Os métodos mostram associação estatística e precedência temporal; **não identificam causalidade**.
+
+| Agregado | Definição (BCB) | Série SGS |
+|---|---|---|
+| M2 | M1 + depósitos de poupança + títulos privados de instituições depositárias | 27810 |
+| M3 | M2 + quotas de fundos de investimento depositários + operações compromissadas | 27813 |
+| M4 | M3 + títulos públicos federais | 27815 |
+
+Séries "Novo": mensais, saldo em final de período, em milhares de R$ correntes, com revisão histórica desde dez/2001. Atenção: a série 27842 é o M2 *dessazonalizado* e não é usada. Como M2 ⊂ M3 ⊂ M4, os agregados têm componentes sobrepostos; cada um é analisado em modelo separado.
+
+**O que a análise faz (`R/09_monetarios.R`):** evolução histórica e crescimento mensal e em 12 meses; comparação com o IPCA mensal e em 12 meses; correlações com defasagens de 0, 3, 6, 9 e 12 meses (inclusive por subperíodo); triagem de estacionariedade (ADF); regressões exploratórias do IPCA mensal sobre o crescimento mensal defasado, com erros robustos de Newey-West e um modelo com câmbio e IPCA(t−1) como controles parciais; e testes do tipo Granger nos dois sentidos. As taxas em 12 meses são só descritivas (janelas sobrepostas).
+
+**Resultados (coleta de `PREENCHER`):** `PREENCHER após executar os scripts 06 (monetarios), 09 e 10, copiando de outputs/tables/m_*.csv`.
+
+![M2, M3 e M4](outputs/figures/11_m_saldos_historicos.png)
+![Crescimento em 12 meses x IPCA](outputs/figures/12_m_crescimento_12m_ipca.png)
+![Taxas mensais](outputs/figures/13_m_crescimento_mensal_ipca.png)
+![Correlação por defasagem](outputs/figures/14_m_correlacao_defasagens.png)
+![Coeficientes das regressões](outputs/figures/15_m_coeficientes_regressao.png)
+
 ## Como instalar
 
 Linux Mint (Ubuntu):
@@ -129,6 +151,9 @@ Rscript R/05_coleta_itens.R         # coleta IPCA por subgrupo e item (SIDRA)
 Rscript R/06_coleta_bcb.R           # coleta câmbio, preços livres e monitorados (BCB/SGS)
 Rscript R/07_hipoteses.R            # testa as hipóteses e grava os vereditos em outputs/tables/
 Rscript R/08_visualizacoes_hipoteses.R  # gera os gráficos 06 a 10
+Rscript R/06_coleta_bcb.R monetarios    # (só se já rodou o 06 antes) coleta apenas M2, M3 e M4
+Rscript R/09_monetarios.R           # agregados monetários x IPCA: tabelas m_*.csv
+Rscript R/10_visualizacoes_monetarios.R  # gráficos 11 a 15
 quarto render analise_inflacao.qmd  # gera analise_inflacao.html
 ```
 
@@ -154,7 +179,9 @@ Cada execução da coleta grava um novo arquivo com data e hora em `data/raw/`; 
 │   ├── 05_coleta_itens.R
 │   ├── 06_coleta_bcb.R
 │   ├── 07_hipoteses.R
-│   └── 08_visualizacoes_hipoteses.R
+│   ├── 08_visualizacoes_hipoteses.R
+│   ├── 09_monetarios.R
+│   └── 10_visualizacoes_monetarios.R
 ├── data/
 │   ├── raw/                  # respostas brutas da API (com carimbo de data)
 │   └── processed/            # bases tratadas

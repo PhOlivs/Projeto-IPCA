@@ -1,19 +1,12 @@
 ---
-title: "Inflação e custo de vida no Brasil desde 2020"
-subtitle: "O que os dados do IPCA mostram — e o que ainda não permitem concluir"
-author: "PhOlivs"
+title: "Inflação e Custo de Vida no Brasil"
+subtitle: "Uma análise exploratória do IPCA desde 2020"
 lang: pt-BR
 format:
   html:
     toc: true
     toc-title: "Conteúdo"
     embed-resources: true
-  typst:
-    output-file: artigo_ipca.pdf
-    toc: true
-    toc-title: "Conteúdo"
-    papersize: a4
-    number-sections: true
 execute:
   echo: false
   warning: false
@@ -66,11 +59,9 @@ n_edu_fev <- sum(top5$grupo == "Educação" & month(top5$data) == 2)
 soma_contrib <- sum(cg$soma_contrib_pp)
 ```
 
-## Em poucas palavras
+## Resumo
 
-Quando os preços sobem, a experiência não é igual para todo mundo: pesa mais no orçamento aquilo que cada família compra com frequência. Este artigo acompanha o IPCA entre `r fm(ini)` e `r fm(fim)` para entender quais grupos ficaram mais caros e como se comportaram os principais momentos de alta.
-
-No período, o IPCA geral acumulou **`r f(est$aumento_acum_pct, 1)`%**. **`r al$grupo`** teve o maior aumento (**`r f(al$aumento_acum_pct, 1)`%**), enquanto **`r rk$grupo[nrow(rk)]`** teve o menor (**`r f(rk$aumento_acum_pct[nrow(rk)], 1)`%**). Também examinamos os picos mensais, a concentração da inflação em alguns itens, o padrão de fevereiro em Educação e as relações descritivas entre câmbio e preços. Os resultados ajudam a organizar o que aconteceu, mas não identificam, por si só, as causas da inflação.
+Este projeto usa dados oficiais do IBGE para investigar quais grupos de consumo mais encareceram no Brasil entre `r fm(ini)` e `r fm(fim)` e como sua evolução se compara ao IPCA geral. No período, o IPCA geral acumulou **`r f(est$aumento_acum_pct, 1)`%**, calculado pela composição das variações mensais. **`r al$grupo`** foi o grupo que mais encareceu (**`r f(al$aumento_acum_pct, 1)`%**), enquanto **`r rk$grupo[nrow(rk)]`** foi o que menos subiu (**`r f(rk$aumento_acum_pct[nrow(rk)], 1)`%**).
 
 ## Pergunta de pesquisa
 
@@ -257,6 +248,123 @@ knitr::include_graphics("outputs/figures/10_h3_correlacao_cambio.png")
 
 Com 81 meses, muitos testes simultâneos, sem controles e com variáveis correlacionadas entre si, esse resultado **não identifica causalidade**.
 
+## Agregados monetários (M2, M3 e M4) e inflação
+
+Esta seção investiga se o crescimento dos meios de pagamento amplos acompanha ou antecede o IPCA. Três conceitos são mantidos separados ao longo do texto: **associação estatística** (as séries se movem juntas), **precedência temporal** (uma série se move antes da outra) e **causalidade econômica** (uma série provoca a outra). Os métodos usados aqui podem mostrar as duas primeiras, mas não a terceira.
+
+```{r}
+#| include: false
+need_m <- c("outputs/tables/m_validacao.csv", "outputs/tables/m_resumo_crescimento.csv", "outputs/tables/m_correlacoes_defasagens.csv",
+            "outputs/tables/m_correlacoes_subperiodos.csv", "outputs/tables/m_correlacao_entre_agregados.csv",
+            "outputs/tables/m_estacionariedade.csv", "outputs/tables/m_regressoes.csv", "outputs/tables/m_granger.csv")
+if (!all(file.exists(need_m))) stop("Rode antes: Rscript R/06_coleta_bcb.R monetarios, R/09_monetarios.R e R/10_visualizacoes_monetarios.R (veja o README).")
+mv <- rd(need_m[1]); mr <- rd(need_m[2]); mc <- rd(need_m[3]); ms <- rd(need_m[4]); ma <- rd(need_m[5]); me <- rd(need_m[6]); mg <- rd(need_m[7]); mgc <- rd(need_m[8])
+ini_m <- min(mr$janela_inicio); fim_m <- max(mr$janela_fim); ult_m <- max(mv$ultimo_mes)
+tab_cor <- function(tp) mc |> filter(tipo == tp) |> mutate(r = paste0(f(pearson), ifelse(acima_limiar, "*", ""))) |>
+  select(Agregado = agregado, defasagem_meses, r) |> pivot_wider(names_from = defasagem_meses, values_from = r, names_prefix = "k = ")
+cmp <- filter(mc, tipo == "mensal", defasagem_meses > 0)
+n_ac <- sum(cmp$acima_limiar); n_tot <- nrow(cmp); melhor_m <- slice_max(cmp, abs(pearson), n = 1, with_ties = FALSE)
+reg_x <- filter(mg, termo == "x"); n_sig <- sum(reg_x$p_aprox < 0.05); n_reg <- nrow(reg_x)
+g_ip <- filter(mgc, direcao == "agregado -> IPCA"); g_ag <- filter(mgc, direcao == "IPCA -> agregado")
+nao_est <- me$serie[!me$rejeita_raiz_unitaria_5pct]
+```
+
+### Dados e definições
+
+```{r}
+tibble(Agregado = c("M2", "M3", "M4"),
+       `Definição (Banco Central)` = c("M1 + depósitos de poupança + títulos privados emitidos por instituições depositárias",
+                                        "M2 + quotas de fundos de investimento depositários + operações compromissadas com títulos públicos e privados",
+                                        "M3 + títulos públicos emitidos pelo Governo Federal"),
+       `Série SGS` = c("27810", "27813", "27815")) |> kable()
+```
+
+São as séries "Novo" dos meios de pagamento amplos (BCB/SGS): mensais, saldo em final de período, em milhares de reais correntes, com revisão histórica desde dez/2001. Os dados vão até `r fm(ult_m)`; a análise com o IPCA cobre `r fm(ini_m)` a `r fm(fim_m)`, o período do IPCA já usado no projeto. Como **M2 ⊂ M3 ⊂ M4**, os agregados têm componentes sobrepostos: seus resultados não são evidências independentes entre si, e nenhum modelo inclui dois agregados ao mesmo tempo. As séries estão completas (sem meses faltando) e `r ifelse(mv$violacoes_hierarquia_M2_M3_M4[1] == 0, "respeitam M2 ≤ M3 ≤ M4 em todos os meses", paste0("violam M2 ≤ M3 ≤ M4 em ", mv$violacoes_hierarquia_M2_M3_M4[1], " meses (conferir)"))`.
+
+### Evolução dos agregados
+
+![Saldos de M2, M3 e M4](outputs/figures/11_m_saldos_historicos.png)
+
+```{r}
+mr |> transmute(Agregado = agregado, `Saldo final (R$ tri)` = f(saldo_final_tri, 2), `Crescimento nominal na janela (%)` = f(acumulado_pct, 1),
+                `IPCA na janela (%)` = f(ipca_acumulado_pct, 1), `Crescimento real (%)` = f(acumulado_real_pct, 1),
+                `Média mensal (%)` = f(media_mensal), `Máx. em 12 meses (%)` = paste0(f(max_12m, 1), " (", fm(mes_max_12m), ")"),
+                `Último 12 meses (%)` = f(ultimo_12m, 1)) |> kable(caption = "Crescimento dos agregados e IPCA na janela da análise")
+```
+
+O crescimento "real" é o nominal deflacionado pelo IPCA acumulado do mesmo período; descreve o poder de compra do saldo, não uma relação de causa com a inflação.
+
+### Crescimento mensal e em 12 meses frente ao IPCA
+
+![Crescimento em 12 meses dos agregados e IPCA em 12 meses](outputs/figures/12_m_crescimento_12m_ipca.png)
+
+![Taxas mensais dos agregados e do IPCA](outputs/figures/13_m_crescimento_mensal_ipca.png)
+
+As taxas em 12 meses suavizam o ruído e a sazonalidade, mas **sobrepõem janelas** (cada mês entra em doze taxas), o que cria forte autocorrelação e reduz muito o número efetivo de observações. Por isso elas são usadas para descrever, e a inferência se apoia nas taxas mensais. Os saldos não são dessazonalizados, então a taxa mensal pode conter efeitos sazonais.
+
+### Correlações com defasagens de 3, 6, 9 e 12 meses
+
+Cada célula é a correlação entre o crescimento do agregado em *t − k* e o IPCA em *t* (k = 0 é a referência contemporânea). O asterisco (\*) marca correlações acima do limiar aproximado de ruído, 2/√n (com n efetivo ≈ n/12 nas taxas em 12 meses).
+
+```{r}
+kable(tab_cor("mensal"), caption = "Taxas mensais: correlação de Pearson")
+```
+
+```{r}
+kable(tab_cor("12m"), caption = "Taxas em 12 meses (descritiva; observações sobrepostas)")
+```
+
+![Correlação por defasagem](outputs/figures/14_m_correlacao_defasagens.png)
+
+Entre as taxas mensais com defasagem positiva, `r n_ac` de `r n_tot` correlações superaram o limiar de ruído (cerca de `r f(0.05 * n_tot, 1)` esperadas só por acaso, e os agregados são correlacionados entre si). A maior correlação absoluta foi `r f(melhor_m$pearson)`, para o **`r melhor_m$agregado`** com defasagem de `r melhor_m$defasagem_meses` meses (n = `r melhor_m$n`), o que corresponde a cerca de `r f(100 * melhor_m$pearson^2, 1)`% da variância linear do IPCA mensal.
+
+```{r}
+ms |> filter(defasagem_meses > 0) |> transmute(Período = periodo, Agregado = agregado, k = defasagem_meses, r = f(pearson)) |>
+  pivot_wider(names_from = k, values_from = r, names_prefix = "k = ") |> kable(caption = "Taxas mensais: correlação por subperíodo")
+```
+
+Se o sinal ou o tamanho das correlações muda entre subperíodos (`r min(ms$n)` a `r max(ms$n)` observações cada), a relação não é estável no tempo, o que enfraquece qualquer leitura causal simples. As taxas mensais dos agregados são correlacionadas entre si (entre `r f(min(ma$correlacao[ma$tipo == "mensal"]))` e `r f(max(ma$correlacao[ma$tipo == "mensal"]))`), consequência direta da sobreposição de componentes.
+
+### Estacionariedade e regressões exploratórias
+
+Antes de regredir, uma triagem de estacionariedade (Dickey-Fuller aumentado, com constante e 3 defasagens). O teste tem baixo poder com amostras deste tamanho; serve só como alerta.
+
+```{r}
+me |> transmute(Série = serie, n, `t (ADF)` = f(t_adf), `Crítico 5%` = f(critico_5pct), `Rejeita raiz unitária` = ifelse(rejeita_raiz_unitaria_5pct, "Sim", "Não")) |> kable()
+```
+
+Séries em que **não** se rejeitou raiz unitária a 5%: `r if (length(nao_est)) paste(nao_est, collapse = ", ") else "nenhuma"`. Regressões entre séries não estacionárias podem ser espúrias; por isso os modelos usam as **taxas mensais** (variações), não os níveis nem as taxas em 12 meses.
+
+Os modelos explicam o IPCA mensal pelo crescimento mensal do agregado defasado em *k* meses. O modelo 1 é simples; o modelo 2 acrescenta o câmbio defasado e o IPCA do mês anterior como controles parciais. Os erros-padrão são robustos a autocorrelação e heteroscedasticidade (Newey-West), com p-valores aproximados pela distribuição normal.
+
+```{r}
+reg_x |> transmute(Modelo = modelo, Agregado = agregado, `Defasagem (meses)` = defasagem_meses, n, Coeficiente = f(coef, 3),
+                   `EP (HAC)` = f(ep_hac, 3), `p (aprox.)` = f(p_aprox, 3), `R²` = f(r2, 3)) |>
+  kable(caption = "Coeficiente do crescimento mensal do agregado (p.p. de IPCA por p.p. de crescimento)")
+```
+
+![Coeficientes das regressões](outputs/figures/15_m_coeficientes_regressao.png)
+
+`r n_sig` de `r n_reg` coeficientes tiveram p aproximado abaixo de 0,05, contra cerca de `r f(0.05 * n_reg, 1)` esperados só por acaso (e as especificações não são independentes). O R² mais alto foi de `r f(max(reg_x$r2), 3)`.
+
+Para a **precedência temporal**, foram feitos testes do tipo Granger (teste F de que as defasagens de uma série acrescentam informação à previsão da outra), nos dois sentidos, com 3 e 6 defasagens.
+
+```{r}
+mgc |> transmute(Direção = direcao, Agregado = agregado, Defasagens = p_defasagens, n, `Estatística F` = f(F), `p-valor` = f(p_valor, 3)) |> kable()
+```
+
+No sentido agregado → IPCA, `r sum(g_ip$p_valor < 0.05)` de `r nrow(g_ip)` testes ficaram abaixo de 0,05; no sentido IPCA → agregado, `r sum(g_ag$p_valor < 0.05)` de `r nrow(g_ag)`. A "causalidade de Granger" é apenas capacidade preditiva incremental: não identifica causa econômica, e uma terceira variável (por exemplo, a taxa de juros ou o câmbio) pode explicar os dois movimentos.
+
+### Como interpretar estes resultados
+
+- **Associação.** Correlações e coeficientes medem comovimento linear. Podem surgir de um fator comum, de coincidência em amostras curtas ou de testes múltiplos.
+- **Precedência temporal.** Um agregado que "antecede" o IPCA estatisticamente é compatível com, mas não prova, um efeito monetário. A própria inflação pode preceder o crescimento nominal dos agregados (a demanda por moeda nominal se ajusta aos preços); por isso o teste foi feito nos dois sentidos.
+- **Causalidade econômica.** Exigiria identificação (por exemplo, choques monetários exógenos, instrumentos ou modelos estruturais) e controle de outros determinantes. Isso está fora do escopo deste projeto.
+
+**Possíveis fatores de confusão (não controlados, ou controlados só em parte):** taxa básica de juros e operações compromissadas (que compõem o M3); política fiscal e emissão de títulos públicos (que compõem o M4); câmbio (apenas um controle parcial no modelo 2); atividade econômica e hiato do produto; choques de oferta em alimentos, energia e combustíveis; preços administrados; expectativas de inflação; o choque da pandemia, que pode ter alterado a demanda por ativos líquidos e a velocidade de circulação da moeda; migração de recursos entre poupança, fundos e títulos, que muda a composição entre M2, M3 e M4 sem alterar a liquidez total; e a sazonalidade das taxas mensais.
+
+**Limitações específicas.** A amostra do IPCA do projeto é curta (a partir de `r fm(ini_m)`) e dominada por poucos episódios; as correlações têm intervalo largo; M2, M3 e M4 não são independentes; os modelos são lineares e não consideram mudanças de regime; as taxas em 12 meses sobrepõem janelas; e o conjunto de testes é grande em relação ao tamanho da amostra.
+
 ## Principais resultados
 
 - **Maiores aumentos acumulados:** `r paste(rk$grupo[1:3], collapse = "; ")`.
@@ -275,9 +383,9 @@ Com 81 meses, muitos testes simultâneos, sem controles e com variáveis correla
 - **H2, Educação em fevereiro:** `r vh$veredito[2]`. O mecanismo de reajuste de mensalidades deve ser confirmado na metodologia do IBGE.
 - **H3, câmbio, preços livres e administrados:** `r vh$veredito[3]`. Análise descritiva, sem controle de outros fatores.
 
-Este relatório observa associações nos dados e não estabelece causalidade. Além disso, o IPCA é um índice agregado, calculado para famílias urbanas com rendimento de 1 a 40 salários mínimos; a inflação vivida por cada família depende da composição de seus gastos. Uma família que destina grande parte do orçamento a alimentação teve experiência diferente da média.
+**Agregados monetários.** Na janela analisada, `r n_ac` de `r n_tot` correlações defasadas (taxas mensais) superaram o limiar de ruído e `r n_sig` de `r n_reg` coeficientes de regressão tiveram p aproximado abaixo de 0,05 (cerca de `r f(0.05 * n_reg, 1)` esperados por acaso). Esses resultados descrevem associação e precedência estatística; não permitem afirmar que a expansão monetária causou (ou não causou) a inflação.
 
-Em termos práticos, a mensagem principal é simples: olhar apenas para o número geral esconde diferenças importantes entre categorias e entre famílias. A análise aponta onde os aumentos foram mais fortes e quando eles se concentraram; para explicar por que isso aconteceu, seria preciso combinar o IPCA com informações adicionais sobre oferta, custos, políticas de preços e hábitos de consumo.
+Este relatório observa associações nos dados e não estabelece causalidade. Além disso, o IPCA é um índice agregado, calculado para famílias urbanas com rendimento de 1 a 40 salários mínimos; a inflação vivida por cada família depende da composição de seus gastos. Uma família que destina grande parte do orçamento a alimentação teve experiência diferente da média.
 
 ## Limitações
 
@@ -285,6 +393,7 @@ Em termos práticos, a mensagem principal é simples: olhar apenas para o númer
 - A série cobre poucos anos e inclui choques atípicos; padrões sazonais e a correlação entre grupos (n = 9) são frágeis.
 - A contribuição é uma aproximação simplificada, não o impacto oficial do IBGE.
 - Grupos são agregados heterogêneos; médias escondem variações entre itens, subgrupos e regiões.
+- Na análise monetária, a amostra é curta, os agregados M2, M3 e M4 são sobrepostos, as séries não são dessazonalizadas e há muitos testes simultâneos; os resultados são exploratórios e não identificam causalidade.
 - Os limiares dos testes de hipóteses são escolhas de julgamento; com outros limiares os vereditos podem mudar. A contribuição por item usa a mesma aproximação simplificada.
 - Os dados são de um único momento de coleta (`r coleta`) e podem ser revistos ou ampliados pelo IBGE.
 
@@ -292,4 +401,5 @@ Em termos práticos, a mensagem principal é simples: olhar apenas para o númer
 
 - IBGE. SIDRA, Tabela 7060: IPCA. <https://sidra.ibge.gov.br/tabela/7060>
 - Banco Central do Brasil. Sistema Gerenciador de Séries Temporais (SGS), séries 1, 4449 e 11428. <https://dadosabertos.bcb.gov.br/>
+- Banco Central do Brasil. Meios de pagamento amplos (saldo em final de período) - Novo: M2 (SGS 27810), M3 (SGS 27813) e M4 (SGS 27815). Catálogo de dados abertos: <https://dadosabertos.bcb.gov.br/>
 - IBGE. IPCA, Índice Nacional de Preços ao Consumidor Amplo. <https://www.ibge.gov.br/estatisticas/economicas/precos-e-custos/9256-indice-nacional-de-precos-ao-consumidor-amplo.html>
